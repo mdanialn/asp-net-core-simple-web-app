@@ -19,17 +19,17 @@ jobs:
           dotnet-version: '6.0.x'  # Specify the .NET Core version you are using
 
       - name: Restore NuGet packages
-        run: dotnet restore EncryptionTool/EncryptionTool.csproj
+        run: dotnet restore WebApp/WebApp.csproj
 
       - name: Build Application
-        run: dotnet build EncryptionTool/EncryptionTool.csproj --configuration Release
+        run: dotnet build WebApp/WebApp.csproj --configuration Release
 
       - name: Publish Application
-        run: dotnet publish EncryptionTool/EncryptionTool.csproj --configuration Release --output ./EncryptionTool/publish
+        run: dotnet publish WebApp/WebApp.csproj --configuration Release --output ./WebApp
 
       - name: Compress published files
         run: |
-          cd EncryptionTool/publish
+          cd WebApp
           tar -czvf ../my-app.zip *
 
       - name: Install AWS CLI
