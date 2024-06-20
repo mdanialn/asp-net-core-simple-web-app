@@ -1,0 +1,52 @@
+name: Deploy to AWS Elastic Beanstalk
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      - name: Setup .NET Core SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '6.0.x'  # Specify the .NET Core version you are using
+
+      - name: Restore NuGet packages
+        run: dotnet restore WebApp/WebApp.csproj
+
+      - name: Build Application
+        run: dotnet build WebApp/WebApp.csproj --configuration Release
+
+      - name: Publish Application
+        run: dotnet publish WebApp/WebApp.csproj --configuration Release --output ./WebApp
+
+      - name: Compress published files
+        run: |
+          cd WebApp
+          tar -czvf ../my-app.zip *
+
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+
+      - name: Deploy to AWS Elastic Beanstalk
+        run: |
+          aws s3 cp EncryptionTool/my-app.zip s3://elasticbeanstalk-eu-north-1-471112929606/my-app.zip
+          aws elasticbeanstalk create-application-version --application-name MyApp --version-label ${{ github.sha }} --source-bundle S3Bucket=elasticbeanstalk-eu-north-1-471112929606,S3Key=my-app.zip
+          aws elasticbeanstalk update-environment --application-name MyApp --environment-name MyEnvironment --version-label ${{ github.sha }}
